@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import streamlit as st
+import numpy as np
+from typing import Any, cast
 
 from analytics import (
     CGPA_BAND_ORDER,
@@ -33,13 +35,11 @@ from analytics import (
     compute_kpis,
     compute_top_patterns,
     encode_for_correlation,
-    find_similar,
     internship_project_heatmap,
     load_data as _load_data,
     package_by,
     placement_by_group,
     placement_rate_by,
-    profile_comparison_chart,
     role_stats,
     tier_cgpa_heatmap,
 )
@@ -74,7 +74,6 @@ SECTIONS = [
     "CGPA & College Tier",
     "Job Role & Salary",
     "Multi-Factor Insights",
-    "Profile Lookup",
 ]
 
 SECTION_DESCRIPTIONS = {
@@ -84,7 +83,6 @@ SECTION_DESCRIPTIONS = {
     "CGPA & College Tier":     "CGPA bands and college tier — alone and in combination.",
     "Job Role & Salary":       "Role distribution, salary ranges, and branch-wise placement.",
     "Multi-Factor Insights":   "Correlation heatmap, cross-tabulations, and key observations.",
-    "Profile Lookup":          "Enter a student profile and compare it to the dataset.",
 }
 
 with st.sidebar:
@@ -438,7 +436,8 @@ elif section == "Internships & Projects":
     with int_right:
         st.markdown("**Package (LPA) Distribution by Internships Count** *(placed only)*")
         placed_df = df_proj[df_proj[COL_PLACEMENT_STATUS] == "Placed"]
-        intern_counts = sorted(placed_df[COL_INTERNSHIPS].unique())
+        internship_series = cast(pd.Series, placed_df[COL_INTERNSHIPS])
+        intern_counts: list[Any] = sorted(internship_series.unique().tolist())
         intern_groups = [
             placed_df.loc[placed_df[COL_INTERNSHIPS] == n, COL_PACKAGE_LPA].dropna().values
             for n in intern_counts
@@ -797,16 +796,20 @@ elif section == "Job Role & Salary":
 
     with role_left:
         # Horizontal bar chart: count of placements by job_role
-        role_counts = (
-            rs.set_index(COL_JOB_ROLE)["count"]
-            .sort_values(ascending=True)  # ascending so largest is at top
-        )
+        role_counts = cast(
+    pd.Series,
+    rs.set_index(COL_JOB_ROLE)["count"]
+).sort_values(ascending=True)
         bar_colors = [
             ROLE_PALETTE[i % len(ROLE_PALETTE)]
             for i in range(len(role_counts))
         ]
         fig, ax = plt.subplots(figsize=(7, max(4, len(role_counts) * 0.5)))
-        ax.barh(role_counts.index, role_counts.values, color=bar_colors)
+        ax.barh(
+    y=role_counts.index,
+    width=[float(v) for v in role_counts.to_list()],
+    color=bar_colors,
+)
         ax.set_xlabel("Number of Placed Students")
         ax.set_title("Placements by Job Role")
         for i, v in enumerate(role_counts.values):
@@ -872,8 +875,10 @@ elif section == "Job Role & Salary":
 
     with sal_row1_right:
         # Salary histogram with mean and median lines
-        mean_sal = placed_df[COL_PACKAGE_LPA].mean()
-        median_sal = placed_df[COL_PACKAGE_LPA].median()
+        salary_values = np.asarray(placed_df[COL_PACKAGE_LPA], dtype=float)
+
+        mean_sal = float(np.mean(salary_values))
+        median_sal = float(np.median(salary_values))
         fig, ax = plt.subplots(figsize=(7, 5))
         ax.hist(
             placed_df[COL_PACKAGE_LPA],
@@ -882,9 +887,9 @@ elif section == "Job Role & Salary":
             edgecolor="white",
             alpha=0.85,
         )
-        ax.axvline(mean_sal, color="#E84855", linestyle="--", linewidth=2,
+        ax.axvline(float(mean_sal), color="#E84855", linestyle="--", linewidth=2,
                    label=f"Mean: {mean_sal:.2f} LPA")
-        ax.axvline(median_sal, color="#F4A261", linestyle="-.", linewidth=2,
+        ax.axvline(float(median_sal), color="#F4A261", linestyle="-.", linewidth=2,
                    label=f"Median: {median_sal:.2f} LPA")
         ax.set_xlabel("Package (LPA)")
         ax.set_ylabel("Number of Students")
@@ -895,13 +900,13 @@ elif section == "Job Role & Salary":
         plt.close(fig)
 
     # Average package by job_role bar chart (full width)
-    avg_pkg = (
-        rs[[COL_JOB_ROLE, "mean_package"]]
-        .sort_values("mean_package", ascending=False)
-    )
-    avg_colors = [
-        ROLE_PALETTE[i % len(ROLE_PALETTE)] for i in range(len(avg_pkg))
-    ]
+    # Average package by job_role bar chart (full width)
+    avg_pkg = cast(pd.DataFrame, rs)[[COL_JOB_ROLE, "mean_package"]]
+    order = np.argsort(avg_pkg["mean_package"])
+    avg_pkg = avg_pkg.iloc[order].reset_index(drop=True)
+    avg_colors: list[str] = [
+    ROLE_PALETTE[i % len(ROLE_PALETTE)] for i in range(len(avg_pkg))
+]
     fig, ax = plt.subplots(figsize=(10, 4))
     bars = ax.bar(avg_pkg[COL_JOB_ROLE], avg_pkg["mean_package"], color=avg_colors)
     ax.set_ylabel("Average Package (LPA)")
@@ -1078,99 +1083,5 @@ elif section == "Multi-Factor Insights":
 
     for observation in compute_top_patterns(df):
         st.success(observation)
-
-    render_footer()
-
-elif section == "Profile Lookup":
-    st.title("🎓 Student Profile Lookup")
-    st.markdown(
-        "Enter a student profile below and see how it compares to similar students "
-        "in the dataset. Results are filtered from the 300 synthetic records."
-    )
-
-    unique_degrees = sorted(df[COL_DEGREE].unique().tolist())
-    unique_branches = sorted(df[COL_BRANCH].unique().tolist())
-
-    with st.form("profile_form"):
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            p_skills   = st.slider("Skills Count",   min_value=2,   max_value=10,  value=5,   step=1)
-            p_intern   = st.selectbox("Internships", options=[0, 1, 2, 3], index=1)
-            p_projects = st.slider("Projects",       min_value=1,   max_value=6,   value=3,   step=1)
-        with col_b:
-            p_cgpa     = st.slider("CGPA",           min_value=6.0, max_value=9.5, value=7.5, step=0.1)
-            p_coding   = st.selectbox("Coding Level", options=CODING_LEVEL_ORDER, index=1)
-            p_tier     = st.selectbox("College Tier", options=["Tier-1", "Tier-2", "Tier-3"], index=1)
-        with col_c:
-            p_degree   = st.selectbox("Degree",  options=unique_degrees)
-            p_branch   = st.selectbox("Branch",  options=unique_branches)
-            p_gender   = st.selectbox("Gender",  options=["M", "F"])
-        submitted = st.form_submit_button("🔍 Analyse Profile")
-
-    if submitted:
-        profile_dict = {
-            COL_SKILLS_COUNT:      p_skills,
-            COL_INTERNSHIPS:       p_intern,
-            COL_PROJECTS:          p_projects,
-            COL_CGPA:              p_cgpa,
-            COL_CODING_LEVEL:      p_coding,
-            COL_COLLEGE_TIER:      p_tier,
-            COL_DEGREE:            p_degree,
-            COL_BRANCH:            p_branch,
-            COL_GENDER:            p_gender,
-        }
-
-        matches, relaxed = find_similar(df, profile_dict)
-
-        if len(matches) == 0:
-            st.error("No similar students found in the dataset even after relaxing filters.")
-        else:
-            if relaxed:
-                st.warning(
-                    "No exact matches found within the numeric tolerances. "
-                    "Showing students with matching background (degree, branch, tier, "
-                    "coding level, gender only)."
-                )
-
-            # ----------------------------------------------------------------
-            # Metrics row
-            # ----------------------------------------------------------------
-            placed_matches = matches[matches[COL_PACKAGE_LPA] > 0]
-            match_placement_rate = len(placed_matches) / len(matches) * 100
-
-            if len(placed_matches) > 0:
-                common_role = placed_matches[COL_JOB_ROLE].mode().iloc[0]
-                median_pkg  = placed_matches[COL_PACKAGE_LPA].median()
-            else:
-                common_role = "—"
-                median_pkg  = 0.0
-
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Matching Students",   len(matches))
-            m2.metric("Placement Rate",       f"{match_placement_rate:.1f}%")
-            m3.metric("Most Common Role",     common_role)
-            m4.metric("Median Package (LPA)", f"{median_pkg:.1f}" if median_pkg > 0 else "—")
-
-            # ----------------------------------------------------------------
-            # Comparison chart
-            # ----------------------------------------------------------------
-            st.subheader("Profile vs Placed Student Averages")
-            fig_cmp = profile_comparison_chart(df, profile_dict)
-            st.pyplot(fig_cmp)
-            plt.close(fig_cmp)
-
-            # ----------------------------------------------------------------
-            # Matched records table
-            # ----------------------------------------------------------------
-            st.subheader(f"Matched Records ({len(matches)} students)")
-            display_cols = [
-                COL_DEGREE, COL_BRANCH, COL_COLLEGE_TIER, COL_CODING_LEVEL,
-                COL_SKILLS_COUNT, COL_INTERNSHIPS, COL_PROJECTS, COL_CGPA,
-                COL_PLACEMENT_STATUS, COL_JOB_ROLE, COL_PACKAGE_LPA,
-            ]
-            st.dataframe(
-                matches[display_cols].reset_index(drop=True),
-                use_container_width=True,
-            )
 
     render_footer()

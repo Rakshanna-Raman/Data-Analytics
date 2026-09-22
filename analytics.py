@@ -380,11 +380,11 @@ def encode_for_correlation(df: pd.DataFrame) -> pd.DataFrame:
 
     # Ordered categoricals
     out[COL_COLLEGE_TIER] = out[COL_COLLEGE_TIER].map(
-        {"Tier-1": 1, "Tier-2": 2, "Tier-3": 3}
-    )
+    lambda x: 1 if x == "Tier-1" else 2 if x == "Tier-2" else 3
+)
     out[COL_CODING_LEVEL] = out[COL_CODING_LEVEL].map(
-        {"Basic": 1, "Intermediate": 2, "Advanced": 3}
-    )
+    lambda x: 1 if x == "Basic" else 2 if x == "Intermediate" else 3
+)
 
     # Nominal categoricals — simple factorize (arbitrary integer codes)
     out[COL_GENDER], _ = pd.factorize(out[COL_GENDER])

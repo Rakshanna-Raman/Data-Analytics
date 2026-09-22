@@ -1,85 +1,87 @@
 # Skills vs Placement Outcomes — College Student Career Analytics
 
-A data analytics and decision-support application that explores how skills,
-coding proficiency, internships, projects, CGPA, and college tier are associated
-with student placement outcomes and salary packages.
+This project analyzes student academic and career-related data to identify patterns in placement outcomes and salary packages. It looks at factors such as skills, coding proficiency, internships, projects, CGPA and college tier.
 
-> **Data note:** The dataset (`Skills_vs_Placement_Reality.csv`) is synthetic.
-> All patterns and conclusions apply strictly to this dataset and should not be
-> generalised to real-world populations.
+The dashboard is designed to make the data easier to understand through KPIs, charts and comparisons.
 
----
+> **Data Note:** The dataset (`Skills_vs_Placement_Reality.csv`) is synthetic. All patterns and conclusions are limited to this dataset and should not be generalized to real-world student populations.
+
+## Problem Statement
+
+Students have different levels of technical skills, coding proficiency, internship experience, project experience and academic performance. This project uses data analytics to study how these factors are associated with placement status and salary packages in the given dataset.
+
+## Objectives
+
+- Analyze the overall placement rate.
+- Study placement patterns by skills and coding proficiency.
+- Analyze internship and project experience.
+- Examine CGPA and college tier patterns.
+- Analyze job roles and salary packages.
+- Identify useful patterns that can support career preparation.
+
+## Dashboard Sections
+
+### Overview
+Provides the main KPIs and placement-related summaries, including placement rate and salary statistics.
+
+### Skills & Coding
+Shows placement patterns based on skills count and coding proficiency.
+
+### Internships & Projects
+Analyzes placement patterns by internship count and project volume.
+
+### CGPA & College Tier
+Compares placement patterns across CGPA bands and college tiers.
+
+### Job Role & Salary
+Shows job-role distribution and salary package analysis for placed students.
+
+### Multi-Factor Insights
+Combines multiple factors to identify broader patterns within the dataset.
+
+## Technologies Used
+
+- Python
+- Pandas
+- NumPy
+- Matplotlib
+- Streamlit
+
+Python is used for data processing and analysis, while Streamlit is used to build the interactive dashboard.
+
+## Dataset
+
+The project uses the **Skills vs Placement Reality of College Students** dataset.
+
+The dataset contains 300 synthetic student records with information such as:
+
+- Degree
+- Branch
+- CGPA
+- College Tier
+- Skills Count
+- Coding Level
+- Internships
+- Projects
+- Placement Status
+- Job Role
+- Package (LPA)
+- Age
+- Gender
+
+### Dataset Source
+
+**Add the original dataset source link here.**
 
 ## Prerequisites
 
 - Python 3.10 or later
 - pip
 
----
-
 ## Installation
 
-```bash
-# 1. Clone or download the repository
-cd skills-placement-analytics
-
-# 2. (Optional but recommended) Create a virtual environment
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
----
-
-## Running the App
+### 1. Clone the repository
 
 ```bash
-streamlit run app.py
-```
-
-The app will open automatically in your default browser at `http://localhost:8501`.
-
----
-
-## Project Structure
-
-```
-skills-placement-analytics/
-├── Skills_vs_Placement_Reality.csv   # Source dataset (300 synthetic student records)
-├── app.py                            # Streamlit UI — navigation, layout, widgets
-├── analytics.py                      # Data loading, KPI computation, chart helpers
-├── requirements.txt                  # Python dependencies
-└── README.md                         # This file
-```
-
----
-
-## Application Sections
-
-| Section | Description |
-|---|---|
-| **Overview** | Key KPIs (placement rate, avg/median package), breakdowns by college tier, degree, and gender |
-| **Skills & Coding** | Placement rate and salary distributions by skills count bucket and coding level |
-| **Internships & Projects** | Effect of internship count and project volume; cross-tabulation heatmap |
-| **CGPA & College Tier** | CGPA band analysis, tier comparison, and tier × CGPA interaction heatmap |
-| **Job Role & Salary** | Role distribution, salary box plots, branch-wise placement rates |
-| **Multi-Factor Insights** | Full correlation heatmap, cross-tabulation bar charts, auto-computed key observations |
-| **Profile Lookup** | Interactive tool — enter a student profile and compare to similar students in the dataset |
-
----
-
-## Dependencies
-
-| Package | Purpose |
-|---|---|
-| `streamlit` | Web UI framework |
-| `pandas` | Data loading and manipulation |
-| `numpy` | Numerical operations |
-| `matplotlib` | Static charts |
-| `seaborn` | Statistical visualisation and heatmaps |
-| `plotly` | (available for future interactive charts) |
+git clone https://github.com/Rakshanna-Raman/Data-Analytics.git
+cd Data-Analytics
